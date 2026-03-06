@@ -3,7 +3,6 @@
 ![PyPI](https://img.shields.io/pypi/v/starling-sdk)
 ![Python](https://img.shields.io/pypi/pyversions/starling-sdk)
 ![License](https://img.shields.io/github/license/OkoyaUsman/starling-python-sdk)
-![CI](https://github.com/OkoyaUsman/starling-python-sdk/actions/workflows/test.yml/badge.svg)
 
 A comprehensive Python wrapper for the Starling Bank API. This SDK provides easy-to-use methods for interacting with all up to date Starling Bank API endpoints.
 
