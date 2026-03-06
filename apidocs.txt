@@ -1,0 +1,5844 @@
+The Starling Public API enables seamless integration of Starling Bank account and transactional data into your application. You can, subject to permission, use it to view account holder data and to automate actions on accounts.
+
+Our API is RESTful, using predictable and resource-orientated URLs with standard HTTP methods and status codes. All responses (expected and errors) are in JSON format. We also offer webhooks so our API can notify you of events.
+
+All API requests are authorised using OAuth2 with different permission scopes required depending on the services you wish to use. This allows our account holders to see the data your application can access and allows us to ensure only trusted partners can carry out significant actions, such as transferring money on our account holder's behalf.
+
+API endpoint URLs
+The base URLs for the Starling public API endpoints are:
+
+Production (to access live Starling Bank accounts, including your own Starling account using a personal access token): https://api.starlingbank.com
+
+Sandbox (to access sandbox accounts): https://api-sandbox.starlingbank.com
+
+You can find the API endpoints themselves below.
+
+API methods
+The API uses four HTTP methods:
+
+Method	Usage
+POST (create)	Makes a new object, always returns the UUID for the object made.
+GET (read)	Returns details of the requested object.
+PUT (update)	Updates an existing object, usually no response content is returned.
+DELETE (delete)	Deletes an existing object, usually no response content is returned.
+
+All responses, including errors, return JSON. The POST and PUT methods require JSON for the request body.
+
+API status codes
+We use standard HTTP status codes in the response header, including, but not limited to, the following:
+
+HTTP Status	Meaning
+200 - OK	The request succeeded and processed OK.
+202 - Accepted	The request has been accepted for processing but processing has not completed. Typically you receive a UUID in the response that you can use to check progress.
+204 - No Content	The request succeeded and there is no content to send in the response payload body.
+400 - Bad Request	Something was wrong with the request. For more details, check the error message included in the response.
+401 - Unauthorized	Your authentication credentials are invalid.
+403 - Forbidden	Your authentication failed, probably because the access token has expired, or you tried to access a resource outside the scope of the token.
+404 - Not Found	The requested resource does not exist.
+5xx - Server Error	Something went wrong on our side - get in touch so we can look into it.
+
+Character Encoding
+Starling APIs use UTF-8 character encoding for all responses and headers. For the best experience we recommend that requests use UTF-8 encoding only.
+
+When making requests, authenticate with the Authorization header set to Bearer $access_token. For example:
+
+Bearer eyJhbGciOiJQUzI1NiIsInppcCI6IkdaSVAifQ.H4sIAAQ-_pT1TALVKOt8.uLjFJikw--DDv3Pf
+We recommend that you include a User-Agent header that allows us to identify you if we need to contact you.
+
+API Reference
+Starling Bank API
+Servers
+
+https://api.starlingbank.com
+Accounts
+
+
+GET
+/api/v2/accounts/{accountUid}/feed-export
+Download a Feed Export for a given date range
+
+🔒 Security: Requires the feed-export-csv:read OAuth scope
+
+A Feed Export contains a list of all (Settled) transactions on an account for a specified date range in CSV format.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+start *
+string($date)
+(query)
+2023-01-01
+end
+string($date)
+(query)
+2023-01-01
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+text/csv
+Controls Accept header.
+Example Value
+Schema
+string($binary)
+example: RGF0ZSxDb3VudGVyIFBhcnR5LFJlZmVyZW5jZSxUeXBlLEFtb3VudCAoR0JQKSxCYWxhbmNlIChHQlApLFNwZW5kaW5nIENhdGVnb3J5CjAxLzAzLzIwMjAsU3RhcmxpbmcgQmFuayxGZWJydWFyeSBJbnRlcmVzdCBFYXJuZWQsREVQT1NJVCBJTlRFUkVTVCwxLjIzLDc2NS4zMyxJTkNPTUUKMDIvMDMvMjAyMCxTdGFnZWNvYWNoLFNUR0NPQUNIL0NUWUxJTksgICAgICAgQlVTIFRJQ0tFVCAgICBHQlIsR09PR0xFIFBBWSwtNC4zMCw3NjEuMDMsVFJBTlNQT1JU
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/accounts/{accountUid}/balance
+Get an account's balance
+
+🔒 Security: Requires the balance:read OAuth scope
+
+The account balance is expressed in two ways: cleared balance and effective balance.
+
+The cleared balance is the balance of settled transactions and so does not include pending transactions. The cleared end of day balance is used to calculate interest.
+The effective balance is the balance of settled and pending outgoing transactions. This is the balance most commonly presented to the account holder (e.g. in-app).
+clearedBalance and effectiveBalance hold the values for the main account only, excluding balances in spaces, savings goals etc. totalClearedBalance and totalEffectiveBalance hold the corresponding values totalled across the main account and all spaces, savings goals etc.
+
+Many payment types settle almost instantly (e.g. faster payments). Card transactions usually take a few days to settle and will remain pending for this time. We've got a blog post on how card transactions work.
+
+To check whether the account has enough money to make a payment, use the confirmation of funds endpoint instead.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+BalanceV2{
+description:	
+Balance details
+
+clearedBalance	SignedCurrencyAndAmount{...}
+effectiveBalance	SignedCurrencyAndAmount{...}
+pendingTransactions	SignedCurrencyAndAmount{...}
+acceptedOverdraft	SignedCurrencyAndAmount{...}
+amount	SignedCurrencyAndAmount{...}
+totalClearedBalance	SignedCurrencyAndAmount{...}
+totalEffectiveBalance	SignedCurrencyAndAmount{...}
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/accounts/{accountUid}/identifiers
+Get an account's bank identifiers
+
+🔒 Security: Requires the account-identifier:read OAuth scope
+
+Identifiers come in pairs:
+
+A bank identifier, which identifies the bank
+An account identifier, which identifiers the account at the bank
+Identifiers can be:
+
+Sort code and account number for domestic UK payments
+BIC and IBAN for international payments
+ABA and ACH routing numbers for domestic US payments
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+AccountIdentifiers{
+description:	
+Bank account identifiers
+
+accountIdentifier	string
+example: 01234567
+Identifier to uniquely identify the account at the bank
+
+bankIdentifier	string
+example: 608371
+Identifier to uniquely identify the bank
+
+iban	string
+example: GB63SRLG60837101234567
+International identifier to uniquely identify the account at the bank
+
+bic	string
+example: SRLGGB2L
+International identifier to uniquely identify the bank
+
+accountIdentifiers	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/accounts
+Get the accounts associated with an account holder
+
+🔒 Security: Requires one of the following OAuth scopes: account:read, account-list:read
+
+This endpoint returns a list of the accounts that you can access using the access token you supplied in the request header.
+
+Each access token is associated with a single account holder, who may have more than one account (for example, a GBP account and a euro account). This endpoint returns all the accounts that the account holder has given you permission to access.
+
+Note that an account holder in this context is either a personal account holder, or a sole trader account holder, or a business account holder or a joint account holder. An individual person may be more than one of these kinds of account holder, but each kind of account holder is a separate entity and hence requires a separate access token and permission.
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+Accounts{
+description:	
+The accounts of an account holder
+
+accounts	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/accounts/{accountUid}/confirmation-of-funds
+Get whether there are available funds for a requested amount
+
+🔒 Security: Requires the confirmation-of-funds:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+targetAmountInMinorUnits *
+integer($int64)
+(query)
+Target amount in minor units
+
+targetAmountInMinorUnits
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+ConfirmationOfFundsResponse{
+requestedAmountAvailableToSpend	boolean
+example: true
+True if requested amount is available to spend
+
+accountWouldBeInOverdraftIfRequestedAmountSpent	boolean
+example: true
+True if spending the requested amount would put the account in overdraft
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Businesses
+
+
+GET
+/api/v2/account-holder/business
+Get a business account holder's details
+
+🔒 Security: Requires the account:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+Business{
+description:	
+Details of a business account holder
+
+companyName	string
+example: Starling Bank
+companyType	string
+example: LTD
+companyCategory	string
+example: FINANCIAL_SERVICES_AND_PRODUCTS
+companySubCategory	string
+example: FINANCIAL_AND_INVESTMENT_ADVICE
+companyRegistrationNumber	string
+example: 09092149
+email	string
+example: help@starlingbank.com
+phone	string
+example: +442079304450
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/account-holder/business/correspondence-address
+Get a company's correspondence address
+
+🔒 Security: Requires the address:read OAuth scope
+
+Will fallback to registered address if not available
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+AddressV2{
+description:	
+Physical address of account holder
+
+line1*	string
+example: 1A Admiralty Arch
+line2	string
+example: The Mall
+line3	string
+example: City of Westminster
+postTown*	string
+example: London
+postCode*	string
+example: SW1A 2WH
+countryCode*	string
+example: GB
+Country code in ISO 3166-1 alpha-2. NB GB is the official country code for the UK. UK is not the officially assigned code, and so is not valid
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/account-holder/business/registered-address
+Get a company's registered address
+
+🔒 Security: Requires the address:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+AddressV2{
+description:	
+Physical address of account holder
+
+line1*	string
+example: 1A Admiralty Arch
+line2	string
+example: The Mall
+line3	string
+example: City of Westminster
+postTown*	string
+example: London
+postCode*	string
+example: SW1A 2WH
+countryCode*	string
+example: GB
+Country code in ISO 3166-1 alpha-2. NB GB is the official country code for the UK. UK is not the officially assigned code, and so is not valid
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Individuals and Sole Traders
+
+
+GET
+/api/v2/account-holder/individual
+Get an individual account holder's details
+
+🔒 Security: Requires the customer:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+Individual{
+description:	
+Information about an individual account holder
+
+title	string
+example: Mr
+firstName	string
+example: Dave
+lastName	string
+example: Bowman
+dateOfBirth	string($date)
+example: 1968-04-02
+email	string
+example: dave.bowman@example.com
+phone	string
+example: +447700900123
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/account-holder/individual/email
+Update an individual account holder's email address
+
+🔒 Security: Requires message signing and the email:edit OAuth scope
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+UpdateEmailRequest{
+email*	string($email)
+example: dave.bowman@example.com
+The new email address for the account holder
+
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Joint Accounts
+
+
+GET
+/api/v2/account-holder/joint
+Get a joint account holder's details
+
+🔒 Security: Requires the customer:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+JointAccount{
+description:	
+Information about a joint account
+
+accountHolderUid	string($uuid)
+example: aabbaabb-aabb-aabb-aabb-aabbaabbaabb
+personOne	Individual{...}
+personTwo	Individual{...}
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Sole Traders
+
+
+GET
+/api/v2/account-holder/sole-trader
+Get sole trader business details
+
+🔒 Security: Requires the account:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+SoleTrader{
+description:	
+Response object contain sole trader business details
+
+tradingAsName	string
+example: Starling Bank
+Trading as name
+
+businessCategory	string
+example: FINANCIAL_SERVICES_AND_PRODUCTS
+Business category
+
+Enum:
+Array [ 36 ]
+businessSubCategory	string
+example: FINANCIAL_AND_INVESTMENT_ADVICE
+Business subcategory
+
+Enum:
+Array [ 453 ]
+businessCategoryDescriptions	[...]
+businessSubCategoryDescriptions	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Account Holders
+
+
+GET
+/api/v2/account-holder
+Get basic information about the account holder
+
+🔒 Security: Requires one of the following OAuth scopes: customer:read, account-holder-type:read
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+AccountHolder{
+description:	
+Information about the account holder type
+
+accountHolderUid	string($uuid)
+example: aabbaabb-aabb-aabb-aabb-aabbaabbaabb
+accountHolderType	string
+Enum:
+Array [ 5 ]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/account-holder/name
+Get the name of the account holder
+
+🔒 Security: Requires the account-holder-name:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+AccountHolderName{
+description:	
+Name of the account holder
+
+accountHolderName	string
+example: Dave Bowman
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Profile images
+
+
+GET
+/api/v2/account-holder/{accountHolderUid}/profile-image
+Get a profile image if one exists
+
+🔒 Security: Requires the profile-image:read OAuth scope
+
+Parameters
+Name	Description
+accountHolderUid *
+string($uuid)
+(path)
+Unique identifier of an account holder
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+image/*
+Controls Accept header.
+Example Value
+Schema
+string($binary)
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/account-holder/{accountHolderUid}/profile-image
+Update a profile image if one already exists
+
+🔒 Security: Requires the profile-image:edit OAuth scope
+
+Parameters
+Name	Description
+accountHolderUid *
+string($uuid)
+(path)
+Unique identifier of an account holder
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Content-Type *
+string
+(header)
+Example : image/jpeg
+
+image/jpeg
+Request body
+
+image/*
+Example values are not available for image/* media types.
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+DELETE
+/api/v2/account-holder/{accountHolderUid}/profile-image
+Delete a profile image if one exists
+
+🔒 Security: Requires the profile-image:edit OAuth scope
+
+Parameters
+Name	Description
+accountHolderUid *
+string($uuid)
+(path)
+Unique identifier of an account holder
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Addresses
+
+
+GET
+/api/v2/addresses
+Get the account holder's addresses
+
+🔒 Security: Requires the address:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+AddressesV2{
+description:	
+Current and previous physical addresses
+
+current	AddressV2{...}
+previous	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+POST
+/api/v2/addresses
+Update the account holder's current address
+
+🔒 Security: Requires message signing and the address:edit OAuth scope
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Update account holder's current address
+
+Example Value
+Schema
+AddressUpdateRequest{
+description:	
+Address update request
+
+line1*	string
+maxLength: 255
+minLength: 0
+example: 1A Admiralty Arch
+line2	string
+maxLength: 255
+minLength: 0
+example: The Mall
+line3	string
+maxLength: 255
+minLength: 0
+example: City of Westminster
+postTown*	string
+maxLength: 255
+minLength: 0
+example: London
+postCode*	string
+maxLength: 20
+minLength: 0
+example: SW1A 2WH
+countryCode*	string
+example: GB
+Country code in ISO 3166-1 alpha-2. NB GB is the official country code for the UK. UK is not the officially assigned code, and so is not valid
+
+udprn	string
+maxLength: 255
+minLength: 0
+example: 23748063
+The UDPRN of the property
+
+umprn	string
+maxLength: 255
+minLength: 0
+example: 923827402
+The UMPRN of the property
+
+from*	string($date)
+example: 2023-01-01
+Date the account holder's residency at this address started
+
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Cards
+
+
+PUT
+/api/v2/cards/{cardUid}/controls/atm-enabled
+Update ATM withdrawal control
+
+🔒 Security: Requires the card-control:edit OAuth scope
+
+Parameters
+Name	Description
+cardUid *
+string($uuid)
+(path)
+Card uid of the targeted card
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Whether ATM withdrawals should be allowed. Set to false to block, true to allow.
+
+Example Value
+Schema
+Enabling{
+enabled*	boolean
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/cards/{cardUid}/controls/enabled
+Update card lock
+
+🔒 Security: Requires the card-control:edit OAuth scope
+
+Parameters
+Name	Description
+cardUid *
+string($uuid)
+(path)
+Card uid of the targeted card
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Whether the card should be locked. Set to false to lock, true to unlock.
+
+Example Value
+Schema
+Enabling{
+enabled*	boolean
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/cards/{cardUid}/controls/currency-switch
+Update currency switch payments control
+
+🔒 Security: Requires the card-control:edit OAuth scope
+
+Parameters
+Name	Description
+cardUid *
+string($uuid)
+(path)
+Card uid of the targeted card
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Whether currency switch payments should be allowed for a given currency. Set to false to block, true to allow.
+
+Example Value
+Schema
+CurrencyFlag{
+description:	
+Whether spending is enabled on this card for the specified currency
+
+enabled*	boolean
+currency*	string
+minLength: 1
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/cards/{cardUid}/controls/gambling-enabled
+Update gambling payments control
+
+🔒 Security: Requires the card-control:edit OAuth scope
+
+Parameters
+Name	Description
+cardUid *
+string($uuid)
+(path)
+Card uid of the targeted card
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Whether gambling payments should be allowed. Set to false to block, true to allow.
+
+Example Value
+Schema
+Enabling{
+enabled*	boolean
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/cards/{cardUid}/controls/mag-stripe-enabled
+Update magstripe payments control
+
+🔒 Security: Requires the card-control:edit OAuth scope
+
+Parameters
+Name	Description
+cardUid *
+string($uuid)
+(path)
+Card uid of the targeted card
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Whether magstripe payments should be allowed. Set to false to block, true to allow.
+
+Example Value
+Schema
+Enabling{
+enabled*	boolean
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/cards/{cardUid}/controls/mobile-wallet-enabled
+Update mobile wallet payments control
+
+🔒 Security: Requires the card-control:edit OAuth scope
+
+Parameters
+Name	Description
+cardUid *
+string($uuid)
+(path)
+Card uid of the targeted card
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Whether mobile wallet payments should be allowed. Set to false to block, true to allow.
+
+Example Value
+Schema
+Enabling{
+enabled*	boolean
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/cards/{cardUid}/controls/online-enabled
+Update online payments control
+
+🔒 Security: Requires the card-control:edit OAuth scope
+
+Parameters
+Name	Description
+cardUid *
+string($uuid)
+(path)
+Card uid of the targeted card
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Whether online payments should be allowed. Set to false to block, true to allow.
+
+Example Value
+Schema
+Enabling{
+enabled*	boolean
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/cards/{cardUid}/controls/pos-enabled
+Update card present payments (contactless and chip and pin) control
+
+🔒 Security: Requires the card-control:edit OAuth scope
+
+Parameters
+Name	Description
+cardUid *
+string($uuid)
+(path)
+Card uid of the targeted card
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Whether card present payments (contactless and chip and pin) should be allowed. Set to false to block, true to allow.
+
+Example Value
+Schema
+Enabling{
+enabled*	boolean
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/cards
+Get all the cards for an account holder
+
+🔒 Security: Requires the card:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+Cards{
+description:	
+Wrapper around multiple cards
+
+cards*	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Direct Debit Mandates
+
+
+GET
+/api/v2/direct-debit/mandates/{mandateUid}
+Get the direct debit mandate with the specified identifier
+
+🔒 Security: Requires the mandate:read OAuth scope
+
+Parameters
+Name	Description
+mandateUid *
+string($uuid)
+(path)
+Unique identifier of the mandate.
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+DirectDebitMandateV2{
+description:	
+Single mandate
+
+uid	string($uuid)
+example: eeffeeff-eeff-eeff-eeff-eeffeeffeeff
+reference	string
+example: Accommodation
+status	string
+example: LIVE
+Enum:
+Array [ 3 ]
+source	string
+example: ELECTRONIC
+Enum:
+Array [ 2 ]
+created	string($date-time)
+example: 2019-04-16T11:47:50.477Z
+cancelled	string($date-time)
+nextDate	string($date)
+example: 2020-04-16
+lastDate	string($date)
+example: 2020-03-16
+originatorName	string
+example: University Of Warwick
+originatorUid	string($uuid)
+example: ff11ff11-ff11-ff11-ff11-ff11ff11ff11
+merchantUid	string($uuid)
+example: 80ba691d-10a6-432c-90be-6ceaf932410e
+lastPayment	LastPayment{...}
+nullable: true
+accountUid	string($uuid)
+example: 323ac478-11a7-232d-90ae-7ceaf832330e
+categoryUid	string($uuid)
+example: null
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+DELETE
+/api/v2/direct-debit/mandates/{mandateUid}
+Cancel the direct debit mandate with the specified identifier
+
+🔒 Security: Requires the mandate:delete OAuth scope
+
+Parameters
+Name	Description
+mandateUid *
+string($uuid)
+(path)
+Unique identifier of the mandate.
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/direct-debit/mandates
+Get a list of direct debit mandates
+
+🔒 Security: Requires the mandate:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+DirectDebitMandatesV2{
+description:	
+List of mandates
+
+mandates	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/direct-debit/mandates/account/{accountUid}
+Get a list of direct debit mandates
+
+🔒 Security: Requires the mandate:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Unique identifier of the account.
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+DirectDebitMandatesV2{
+description:	
+List of mandates
+
+mandates	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/direct-debit/mandates/{mandateUid}/payments
+Get a transaction history for a direct debit
+
+🔒 Security: Requires the mandate:read OAuth scope
+
+Parameters
+Name	Description
+mandateUid *
+string($uuid)
+(path)
+Unique identifier of the mandate.
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+since *
+string($date)
+(query)
+Start date for a transaction history
+
+2023-01-01
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+DirectDebitPaymentsResponse{
+description:	
+Transaction history for a direct debit
+
+directDebitPayments*	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Transaction Feed
+
+
+GET
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/{feedItemUid}/attachments
+Fetches the list of items attached to a feed item
+
+🔒 Security: Requires the attachment:read OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemUid *
+string($uuid)
+(path)
+Feed item uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+FeedItemAttachments{
+feedItemAttachments	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+POST
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/{feedItemUid}/attachments
+Uploads an attachment to a feed item
+
+🔒 Security: Requires the attachment:write OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemUid *
+string($uuid)
+(path)
+Feed item uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Content-Type *
+string
+(header)
+Content-Type
+Request body
+
+*/*
+Attachment input stream
+
+Example Value
+Schema
+{
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+string($uuid)
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/{feedItemUid}/spending-category
+Changes the spending category for a transaction
+
+🔒 Security: Requires the transaction:edit OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+The spending category is different. It specifies the type of spending associated with the transaction, for example, GROCERIES, GIFTS or VAT.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemUid *
+string($uuid)
+(path)
+Feed item uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Spending category
+
+Example Value
+Schema
+UpdateSpendingCategory{
+spendingCategory*	string
+example: GROCERIES
+The category of a transaction
+
+Enum:
+Array [ 154 ]
+permanentSpendingCategoryUpdate	boolean
+example: false
+previousSpendingCategoryReferencesUpdate	boolean
+example: false
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/{feedItemUid}/receipt
+Fetches the receipt, created by the registered application, for a given feed item
+
+🔒 Security: Requires the receipt:read OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemUid *
+string($uuid)
+(path)
+Feed item uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+Receipt{
+description:	
+Transaction receipt
+
+receiptUid	string($uuid)
+example: 7f03a13a-bbfc-4479-8d4d-abb6a9119d27
+feedItemUid	string($uuid)
+example: 5e03a13a-bbfc-4479-8d4d-abb6a9119d27
+metadataSource*	string
+example: PARTNER
+Enum:
+Array [ 3 ]
+receiptIdentifier*	string
+minLength: 1
+example: 0987654321
+totalAmount*	number
+example: 10.65
+receiptMerchant*	ReceiptMerchant{...}
+currencyCode	string
+example: GBP
+ISO-4217 3 character currency code
+
+Enum:
+Array [ 189 ]
+items*	[...]
+notes	[...]
+taxDetails	[...]
+paymentMethods*	[...]
+providerName	string
+example: Receipt App
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/{feedItemUid}/receipt
+Submit a receipt for a feed item
+
+🔒 Security: Requires one of the following OAuth scopes: receipt:write, metadata:create, metadata:edit
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemUid *
+string($uuid)
+(path)
+Feed item uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Receipt
+
+Example Value
+Schema
+Receipt{
+description:	
+Transaction receipt
+
+receiptUid	string($uuid)
+example: 7f03a13a-bbfc-4479-8d4d-abb6a9119d27
+feedItemUid	string($uuid)
+example: 5e03a13a-bbfc-4479-8d4d-abb6a9119d27
+metadataSource*	string
+example: PARTNER
+Enum:
+Array [ 3 ]
+receiptIdentifier*	string
+minLength: 1
+example: 0987654321
+totalAmount*	number
+example: 10.65
+receiptMerchant*	ReceiptMerchant{...}
+currencyCode	string
+example: GBP
+ISO-4217 3 character currency code
+
+Enum:
+Array [ 189 ]
+items*	[...]
+notes	[...]
+taxDetails	[...]
+paymentMethods*	[...]
+providerName	string
+example: Receipt App
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+ReceiptCreationResponse{
+description:	
+Response after creating or updating a receipt
+
+receiptUid	string($uuid)
+example: aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+The UUID of the created receipt. This UUID could be used for updating the receipt at a later point.
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/{feedItemUid}/attachments/{feedItemAttachmentUid}
+Downloads the feed item attachment
+
+🔒 Security: Requires the attachment:read OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemUid *
+string($uuid)
+(path)
+Feed item uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemAttachmentUid *
+string($uuid)
+(path)
+Feed item attachment uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+string($binary)
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/{feedItemUid}
+Fetches a single feed item
+
+🔒 Security: Requires the transaction:read OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemUid *
+string($uuid)
+(path)
+Feed item uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+FeedItem{
+description:	
+An item from the account holders's transaction feed
+
+feedItemUid	string($uuid)
+example: 11221122-1122-1122-1122-112211221122
+Unique identifier for this item
+
+categoryUid	string($uuid)
+example: ccddccdd-ccdd-ccdd-ccdd-ccddccddccdd
+The category on which the transaction happened
+
+amount	CurrencyAndAmount{...}
+sourceAmount	CurrencyAndAmount{...}
+direction	string
+Was this an inbound or outbound transaction
+
+Enum:
+Array [ 2 ]
+updatedAt	string($date-time)
+The time the transaction was last updated at
+
+transactionTime	string($date-time)
+The time of the transaction
+
+settlementTime	string($date-time)
+The time the transaction settled
+
+retryAllocationUntilTime	string($date-time)
+source	string
+example: MASTER_CARD
+The source of a transaction
+
+Enum:
+Array [ 46 ]
+sourceSubType	string
+example: CONTACTLESS
+The source subtype of the transaction
+
+Enum:
+Array [ 26 ]
+status	string
+example: PENDING
+The status of a transaction
+
+Enum:
+Array [ 9 ]
+transactingApplicationUserUid	string($uuid)
+example: aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+The application user that made the transaction
+
+counterPartyType	string
+example: MERCHANT
+The type of counter party for a transaction
+
+Enum:
+Array [ 8 ]
+counterPartyUid	string($uuid)
+example: 68e16af4-c2c3-413b-bf93-1056b90097fa
+The unique identifier for the counter party. eg for MERCHANT this will be the merchant uid, for PAYEE this will be the payee uid
+
+counterPartyName	string
+example: Tesco
+The name of the counter party
+
+counterPartySubEntityUid	string($uuid)
+example: 35d46207-d90e-483c-a40a-128cc4da4bee
+An identifier for the counter party sub entity. eg for MERCHANT this will be the merchant location uid, for PAYEE this will be the payee account uid
+
+counterPartySubEntityName	string
+example: Tesco Southampton
+A name for the counter party sub entity, for PAYEE this will be the name set for the payee account
+
+counterPartySubEntityIdentifier	string
+example: 608371
+An external identifier for the sub entity, for PAYEE this will be the sort code of the account
+
+counterPartySubEntitySubIdentifier	string
+example: 01234567
+An external sub identifier for the sub entity, for PAYEE this will be the account number of the account
+
+exchangeRate	number
+totalFees	number
+totalFeeAmount	CurrencyAndAmount{...}
+reference	string
+example: TESCO-STORES-6148 SOUTHAMPTON GBR
+The reference for the transaction
+
+country	string
+example: GB
+The country in which the transaction took place. ISO 3166-1 alpha-2
+
+Enum:
+Array [ 273 ]
+spendingCategory	string
+example: GROCERIES
+The category of a transaction
+
+Enum:
+Array [ 154 ]
+userNote	string
+example: Tax deductable, submit me to payroll
+The user-provided transaction note
+
+roundUp	AssociatedFeedRoundUp{...}
+hasAttachment	boolean
+example: true
+Attachment present
+
+hasReceipt	boolean
+example: true
+Receipt present
+
+batchPaymentDetails	BatchPaymentDetails{...}
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/{feedItemUid}/mastercard
+Fetches additional details about the Mastercard Feed Item
+
+🔒 Security: Requires the transaction:read OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemUid *
+string($uuid)
+(path)
+Feed item uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+MastercardFeedItem{
+merchantIdentifier	string
+mcc	integer($int32)
+posTimestamp	LocalTime{...}
+authorisationCode	string
+cardLast4	string
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/{feedItemUid}/receipts
+Fetches all receipts for a given feed item
+
+🔒 Security: Requires the receipts:read OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemUid *
+string($uuid)
+(path)
+Feed item uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+[Receipt{...}]
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/feed/account/{accountUid}/category/{categoryUid}
+Get the account holder's feed items which were created or updated since a given date
+
+🔒 Security: Requires the transaction:read OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+changesSince *
+string($date-time)
+(query)
+Items which have changed since
+
+Example : 2020-01-01T12:34:56.000Z
+
+2020-01-01T12:34:56.000Z
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+FeedItems{
+description:	
+Wrapper around multiple feed items
+
+feedItems	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/transactions-between
+Get the account holder's feed items for the specified category, which were created between two timestamps
+
+🔒 Security: Requires the transaction:read OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+minTransactionTimestamp *
+string($date-time)
+(query)
+Minimum transaction timestamp
+
+Example : 2020-06-01T12:34:56.000Z
+
+2020-06-01T12:34:56.000Z
+maxTransactionTimestamp *
+string($date-time)
+(query)
+Maximum transaction timestamp
+
+Example : 2020-07-01T12:34:56.000Z
+
+2020-07-01T12:34:56.000Z
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+FeedItems{
+description:	
+Wrapper around multiple feed items
+
+feedItems	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/feed/account/{accountUid}/settled-transactions-between
+Get the account holder's settled feed items for the specified account, which have settlement time between the two provided timestamps
+
+🔒 Security: Requires the transaction:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+minTransactionTimestamp *
+string($date-time)
+(query)
+Minimum transaction timestamp
+
+Example : 2020-06-01T12:34:56.000Z
+
+2020-06-01T12:34:56.000Z
+maxTransactionTimestamp *
+string($date-time)
+(query)
+Maximum transaction timestamp
+
+Example : 2020-07-01T12:34:56.000Z
+
+2020-07-01T12:34:56.000Z
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+FeedItems{
+description:	
+Wrapper around multiple feed items
+
+feedItems	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/feed/account/{accountUid}/category/{categoryUid}/{feedItemUid}/user-note
+Changes the user-specified note attached to a transaction
+
+🔒 Security: Requires the transaction:edit OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+feedItemUid *
+string($uuid)
+(path)
+Feed item uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+User Note
+
+Example Value
+Schema
+UserNoteWrapper{
+userNote*	string
+example: Submitted for tax rebate
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Feed Round-up
+
+
+GET
+/api/v2/feed/account/{accountUid}/round-up
+Returns the the round-up goal associated with an account if one has been created
+
+🔒 Security: Requires the savings-goal:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+RoundUpGoalResponse{
+active	boolean
+roundUpGoal	RoundUpGoalDetails{...}
+roundUpGoalDetails	RoundUpGoalDetails{...}
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/feed/account/{accountUid}/round-up
+Activates transaction round-up and adds remainder to savings goal
+
+🔒 Security: Requires the savings-goal:create OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Round-up goal
+
+Example Value
+Schema
+RoundUpGoalPayload{
+roundUpGoalUid*	string($uuid)
+example: 77887788-7788-7788-7788-778877887788
+UID of the account category to send round-ups to
+
+roundUpMultiplier*	integer($int32)
+maximum: 10
+minimum: 1
+example: 2
+How much to multiply the rounded-up amount by before transfer. Must be an integer between 1 and 10 (inclusive)
+
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+DELETE
+/api/v2/feed/account/{accountUid}/round-up
+Deletes the round-up goal associated with an account if one exists
+
+🔒 Security: Requires the savings-goal:delete OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+API User Identities
+
+
+GET
+/api/v2/identity/individual
+The individual who authorised the application
+
+🔒 Security: Requires the authorising-individual:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+Individual{
+description:	
+Information about an individual account holder
+
+title	string
+example: Mr
+firstName	string
+example: Dave
+lastName	string
+example: Bowman
+dateOfBirth	string($date)
+example: 1968-04-02
+email	string
+example: dave.bowman@example.com
+phone	string
+example: +447700900123
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/identity/token
+Get current token identity
+
+🔒 Security: Requires an OAuth access token (no scopes required)
+
+This endpoint returns the permissions you have access to, the time until the token expires and the account holder's unique identifier.
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+IdentityV2{
+accountHolderUid	string($uuid)
+example: aabbaabb-aabb-aabb-aabb-aabbaabbaabb
+expiresAt	string($date-time)
+expiresInSeconds	integer($int64)
+example: 123
+scopes	[...]
+authenticated	boolean
+applicationUserUid	string($uuid)
+example: aabbaabb-aabb-aabb-aabb-aabbaabbaabb
+consentExpiresAt	string($date-time)
+customerUid	string($uuid)
+example: aabbaabb-aabb-aabb-aabb-aabbaabbaabb
+deprecated: true
+Deprecated, use accountHolderUid instead
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/identity/logout
+Logout the current individual
+
+🔒 Security: Requires an OAuth access token (no scopes required)
+
+This endpoint logs an individual out by disabling all of their active access tokens.
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+202	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Payments
+
+
+GET
+/api/v2/payments/local/account/{accountUid}/category/{categoryUid}/standing-orders/{paymentOrderUid}
+Get a standing order
+
+🔒 Security: Requires one of the following OAuth scopes: standing-order:read, standing-order-own:read
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+If startDate is null, the standing order is awaiting review and has not yet been approved.
+
+If cancelledAt is non-null, the standing order has been cancelled, either by the customer, or as a result of the payment review.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+paymentOrderUid *
+string($uuid)
+(path)
+Payment Order uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+StandingOrder{
+description:	
+Response object for standing order queries
+
+paymentOrderUid	string($uuid)
+example: 33443344-3344-3344-3344-334433443344
+UID of this payment order
+
+amount	CurrencyAndAmount{...}
+reference	string
+example: Payment reference
+The reference set by the payer
+
+payeeUid	string($uuid)
+example: 55665566-5566-5566-5566-556655665566
+The ID of the payee receiving the payments
+
+payeeAccountUid	string($uuid)
+example: 66776677-6677-6677-6677-667766776677
+The account ID of the payee account receiving the payments
+
+standingOrderRecurrence	StandingOrderRecurrence{...}
+nextDate	string($date)
+example: 2023-01-01
+Date on which the next standing order payment will be made
+
+cancelledAt	string($date-time)
+example: 2017-07-05T18:27:02.335Z
+The time the standing order is cancelled at
+
+updatedAt	string($date-time)
+example: 2017-07-05T18:27:02.335Z
+The time the standing order is updated at
+
+spendingCategory	string
+nullable: true
+The category of a transaction
+
+Enum:
+Array [ 154 ]
+categoryUid	string($uuid)
+example: 11771177-1177-1177-1177-117711771177
+The category ID of the category from which the payment will be sent
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/payments/local/account/{accountUid}/category/{categoryUid}/standing-orders/{paymentOrderUid}
+Update a standing order
+
+🔒 Security: Requires message signing and the standing-order:create OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Possible 400 (Bad Request) errors include:
+
+CANNOT_MAKE_REQUESTED_CHANGE: you cannot make this change to this standing order. You can create a new standing order instead.
+CANNOT_UPDATE_CANCELLED_PAYMENT_ORDER: you cannot update this standing order because it has been cancelled.
+CANNOT_UPDATE_PENDING_PAYMENT_ORDER: you cannot update this standing order at this time because it is pending. This can happen if the original standing order is awaiting review. In this case, GET /api/v2/payments/local/account/{accountUid}/category/{categoryUid}/standing-orders/{paymentOrderUid} will return a null startDate.
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+paymentOrderUid *
+string($uuid)
+(path)
+Payment order uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Standing order update request.
+
+Example Value
+Schema
+UpdateStandingOrderRequest{
+description:	
+Request to update a standing order
+
+paymentOrderUid*	string($uuid)
+example: 33443344-3344-3344-3344-334433443344
+UID of this payment order
+
+reference*	string
+maxLength: 18
+minLength: 1
+pattern: [a-zA-Z0-9-/?:().,+#=!%&*<>;{@ "']{1,18}
+example: Payment reference
+The payment reference
+
+amount*	CurrencyAndAmount{...}
+standingOrderRecurrence*	StandingOrderRecurrence{...}
+spendingCategory	string
+The category of a transaction
+
+Enum:
+Array [ 154 ]
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+UpdateStandingOrderResponse{
+description:	
+Response after attempting to update a standing order
+
+paymentOrderUid	string($uuid)
+example: 33443344-3344-3344-3344-334433443344
+The uid of the updated payment order created by the standing order. N.B. this will not be the uid of any payment which is created by the standing order. If the recurrence rule is updated, this payment order uid will be different from the original one
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+DELETE
+/api/v2/payments/local/account/{accountUid}/category/{categoryUid}/standing-orders/{paymentOrderUid}
+Cancel a standing order
+
+🔒 Security: Requires message signing and the standing-order:delete OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Possible 400 (Bad Request) errors include:
+
+CANNOT_CANCEL_PENDING_PAYMENT_ORDER: you cannot cancel this standing order at this time because it is pending. This can happen if the original standing order is awaiting review. In this case, GET /api/v2/payments/local/account/{accountUid}/category/{categoryUid}/standing-orders/{paymentOrderUid} returns a null startDate.
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+paymentOrderUid *
+string($uuid)
+(path)
+Payment order uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/payments/local/account/{accountUid}/category/{categoryUid}/standing-orders
+List standing orders
+
+🔒 Security: Requires one of the following OAuth scopes: standing-order:read, standing-order-own:read
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+Standing orders that are awaiting review are omitted from the list.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+StandingOrdersResponse{
+description:	
+List of standing orders associated to an account holder
+
+standingOrders	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/payments/local/account/{accountUid}/category/{categoryUid}/standing-orders
+Create a new standing order
+
+🔒 Security: Requires message signing and the standing-order:create OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+The recipient of the standing order must either be defined in the paymentRecipient field in the request body or be an existing payee of the account holder (you can create a new payee using /api/v2/payees).
+
+externalIdentifier is a unique identifier for the standing order request, and is generated by you. To ensure idempotency, this must be unique for each standing order request you create.
+
+Note that the standing order may not be created immediately if we need to review the request. In that case, the request may remain in a PENDING state for a while (possibly for a few hours).
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Standing order creation object.
+
+Example Value
+Schema
+CreateStandingOrderRequest{
+description:	
+Request to create a standing order
+
+externalIdentifier*	string
+maxLength: 100
+minLength: 0
+example: a unique identifier to ensure idempotency
+External identifier for the standing order request
+
+destinationPayeeAccountUid	string($uuid)
+example: 66776677-6677-6677-6677-667766776677
+The desired payment recipient. Either paymentRecipient or destinationPayeeAccountUid must be present
+
+paymentRecipient	PaymentRecipient{...}
+reference*	string
+maxLength: 18
+minLength: 1
+pattern: [a-zA-Z0-9-/?:().,+#=!%&*<>;{@ "']{1,18}
+example: Monthly Expenses
+The payment reference
+
+amount*	CurrencyAndAmount{...}
+standingOrderRecurrence*	StandingOrderRecurrence{...}
+spendingCategory	string
+The category of a transaction
+
+Enum:
+Array [ 154 ]
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+CreateStandingOrderResponse{
+description:	
+Response after attempting to create a standing order
+
+paymentOrderUid	string($uuid)
+example: 33443344-3344-3344-3344-334433443344
+The uid of the payment order created by the standing order. N.B. this will not be the uid of any payment which is created by the standing order
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/payments/local/payment-order/{paymentOrderUid}
+Get a payment order
+
+🔒 Security: Requires the pay-local:read OAuth scope
+
+Parameters
+Name	Description
+paymentOrderUid *
+string($uuid)
+(path)
+Payment order uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+PaymentOrderV2{
+description:	
+Response object for payment order queries
+
+paymentOrderUid*	string($uuid)
+example: 33443344-3344-3344-3344-334433443344
+UID of this payment order
+
+amount*	CurrencyAndAmount{...}
+reference*	string
+example: Payment reference
+The reference set by the payer
+
+payeeUid*	string($uuid)
+example: 55665566-5566-5566-5566-556655665566
+The ID of the payee receiving this payment
+
+payeeAccountUid*	string($uuid)
+example: 66776677-6677-6677-6677-667766776677
+The account ID of the payee account receiving this payment
+
+spendingCategory	string
+nullable: true
+The category of a transaction
+
+Enum:
+Array [ 154 ]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/payments/local/payment-order/{paymentOrderUid}/payments
+Get the payments associated with a payment order
+
+🔒 Security: Requires the pay-local:read OAuth scope
+
+Note that a payment associated with a payment order may be pending (paymentStatusDetails.paymentStatus = PENDING) or rejected (paymentStatusDetails.paymentStatus = REJECTED).
+
+Parameters
+Name	Description
+paymentOrderUid *
+string($uuid)
+(path)
+Payment order uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+PaymentOrderPaymentsResponse{
+description:	
+List of payments associated with a payment order
+
+payments*	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/payments/local/account/{accountUid}/category/{categoryUid}/standing-orders/{paymentOrderUid}/upcoming-payments
+List the next payment dates of a standing order
+
+🔒 Security: Requires the standing-order:read OAuth scope
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+If you only want the next payment date, you can also get this from the nextDate returned by GET /api/v2/payments/local/account/{accountUid}/category/{categoryUid}/standing-orders/{paymentOrderUid}.
+
+If nextPaymentDates is empty for a standing order, the standing order may be awaiting review, or may have been cancelled. Or it may have been a one-off standing order: in this case, nextDate will be null too.
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+paymentOrderUid *
+string($uuid)
+(path)
+Payment Order uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+count
+integer($int32)
+(query)
+Number of next payment dates to retrieve, between 1 and 100. If count is greater than the number of future payments all future payments will be returned. Defaults to 10.
+
+count
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+NextPaymentDatesResponse{
+description:	
+List of next payment dates of a standing order
+
+nextPaymentDates	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/payments/local/account/{accountUid}/category/{categoryUid}
+Create payment
+
+🔒 Security: Requires message signing and one of the following OAuth scopes: pay-local:create, pay-local-once:create
+
+Creates and sends an immediate payment within the UK under the Faster Payments Scheme or via SEPA for payments between Euro accounts.
+
+Categories are subdivisions of an account. The default category holds the main balance and transactions. Savings goals and spending spaces are examples of other categories. You can use /api/v2/accounts to get the default category UID for an account.
+
+The recipient of the payment must either be defined in the paymentRecipient field in the request body or be an existing payee of the account holder (you can create a new payee using /api/v2/payees).For payments made using a Personal Access Token, the recipient must be an existing payee defined in the destinationPayeeAccountUid field.
+
+externalIdentifier is a unique identifier for the payment request, and is generated by you. To ensure idempotency, this must be unique for each payment request you create.
+
+Note that the payment may not take place immediately if we need to review the payment request. In that case, the payment may remain in a PENDING state for a while (possibly for a few hours).
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+categoryUid *
+string($uuid)
+(path)
+Category uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Payment instruction object.
+
+Example Value
+Schema
+InstructLocalPaymentRequest{
+description:	
+Request to make a local payment
+
+externalIdentifier*	string
+maxLength: 100
+minLength: 0
+example: Unique identifier to ensure idempotency
+Identifier for the payment request, generated by you. Must be unique for each payment request you create
+
+destinationPayeeAccountUid	string($uuid)
+example: aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+The desired payment recipient. Either paymentRecipient or destinationPayeeAccountUid must be present
+
+paymentRecipient	PaymentRecipient{...}
+reference*	string
+pattern: [a-zA-Z0-9-/?:().,+#=!%&*<>;{@ "']{1,35}
+example: December Expenses
+The payment reference. The 35 character limit applies to SEPA payments (Euro accounts). For FPS payments (GBP accounts), the limit is 18 characters
+
+amount*	CurrencyAndAmount{...}
+spendingCategory	string
+The category of a transaction
+
+Enum:
+Array [ 154 ]
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+InstructLocalPaymentResponse{
+description:	
+Response after attempting to create a local payment
+
+paymentOrderUid	string($uuid)
+example: 33443344-3344-3344-3344-334433443344
+The uid of the payment order created by the instruction. N.B. this will not be the uid of any payment which is created by the payment order
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Payees
+
+
+GET
+/api/v2/payees
+Get an account holder's payees
+
+🔒 Security: Requires the payee:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+Payees{
+description:	
+The payees of an account holder
+
+payees	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/payees
+Create a payee
+
+🔒 Security: Requires the payee:create OAuth scope
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Payee creation object
+
+Example Value
+Schema
+PayeeCreationRequest{
+description:	
+Request to create a payee
+
+payeeName*	string
+maxLength: 255
+minLength: 1
+example: Bob Bobbington
+Name
+
+phoneNumber	string
+maxLength: 20
+minLength: 0
+example: +447700900123
+Phone number
+
+payeeType*	string
+example: INDIVIDUAL
+Enum:
+Array [ 2 ]
+firstName	string
+maxLength: 255
+minLength: 1
+example: Bob
+First name
+
+middleName	string
+maxLength: 255
+minLength: 1
+example: Bobity
+Middle name
+
+lastName	string
+maxLength: 255
+minLength: 1
+example: Bobbington
+Last name
+
+businessName	string
+maxLength: 255
+minLength: 1
+example: Trotters Independent Traders
+Business name
+
+dateOfBirth	string($date)
+example: 2023-01-01
+Date of birth for this payee
+
+accounts	[...]
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+PayeeCreationResponse{
+description:	
+Response after attempting to create a payee
+
+payeeUid	string
+example: 55665566-5566-5566-5566-556655665566
+The newly created payee unique identifier, only present on successful payee creation
+
+success	boolean
+example: true
+True if the method completed successfully
+
+errors	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/payees/{payeeUid}/account
+Create a payee account
+
+🔒 Security: Requires the payee:create OAuth scope
+
+Parameters
+Name	Description
+payeeUid *
+string($uuid)
+(path)
+Unique identifier of the payee
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Payee account creation object
+
+Example Value
+Schema
+PayeeAccountCreationRequest{
+description:	
+Request to create a payee account
+
+description*	string
+maxLength: 255
+minLength: 1
+example: Bob's business account
+Account description
+
+defaultAccount*	boolean
+example: true
+Is this the default account for the owning payee
+
+countryCode*	string
+example: GB
+The country code for the account (ISO 3166-1 alpha-2)
+
+accountIdentifier*	string
+maxLength: 34
+minLength: 0
+example: 12345678
+The account identifier
+
+bankIdentifier*	string
+maxLength: 34
+minLength: 0
+example: 123456
+The bank identifier
+
+bankIdentifierType*	string
+example: SORT_CODE
+The bank identifier type
+
+Enum:
+Array [ 7 ]
+secondaryIdentifier	string
+Secondary reference data (SRD), if applicable
+
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+PayeeAccountCreationResponse{
+description:	
+Response after attempting to create a payee account
+
+payeeAccountUid	string
+example: 66776677-6677-6677-6677-667766776677
+The newly created payee unique identifier, only present on successful payee account creation
+
+success	boolean
+example: true
+True if the method completed successfully
+
+errors	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/payees/{payeeUid}
+Get a specific account holder payee
+
+🔒 Security: Requires the payee:read OAuth scope
+
+Parameters
+Name	Description
+payeeUid *
+string($uuid)
+(path)
+Unique identifier of the payee
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+Payee{
+description:	
+A saved payee
+
+payeeUid*	string($uuid)
+example: 55665566-5566-5566-5566-556655665566
+The uid of this payee
+
+payeeName*	string
+example: Bob Bobbington
+Name
+
+phoneNumber	string
+example: +447700900123
+Phone number
+
+payeeType*	string
+INDIVIDUAL
+
+Enum:
+Array [ 2 ]
+firstName	string
+example: Bob
+First name
+
+middleName	string
+example: Bobity
+Middle name
+
+lastName	string
+example: Bobbington
+Last name
+
+businessName	string
+example: Trotters Independent Traders
+Business name
+
+dateOfBirth	string($date)
+example: 1990-11-30
+Date of birth
+
+accounts	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/payees/{payeeUid}
+Update a payee
+
+🔒 Security: Requires the payee:edit OAuth scope
+
+Parameters
+Name	Description
+payeeUid *
+string($uuid)
+(path)
+Unique identifier of the payee
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Payee update object
+
+Example Value
+Schema
+PayeeCreationRequest{
+description:	
+Request to create a payee
+
+payeeName*	string
+maxLength: 255
+minLength: 1
+example: Bob Bobbington
+Name
+
+phoneNumber	string
+maxLength: 20
+minLength: 0
+example: +447700900123
+Phone number
+
+payeeType*	string
+example: INDIVIDUAL
+Enum:
+Array [ 2 ]
+firstName	string
+maxLength: 255
+minLength: 1
+example: Bob
+First name
+
+middleName	string
+maxLength: 255
+minLength: 1
+example: Bobity
+Middle name
+
+lastName	string
+maxLength: 255
+minLength: 1
+example: Bobbington
+Last name
+
+businessName	string
+maxLength: 255
+minLength: 1
+example: Trotters Independent Traders
+Business name
+
+dateOfBirth	string($date)
+example: 2023-01-01
+Date of birth for this payee
+
+accounts	[...]
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+ConsentInformation{
+description:	
+Denotes whether a request has been paused in order for the user to approve it.
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+DELETE
+/api/v2/payees/{payeeUid}
+Deletes a payee
+
+🔒 Security: Requires the payee:delete OAuth scope
+
+Parameters
+Name	Description
+payeeUid *
+string($uuid)
+(path)
+Unique identifier of the payee
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+DELETE
+/api/v2/payees/{payeeUid}/account/{accountUid}
+Delete a payee account
+
+🔒 Security: Requires the payee:delete OAuth scope
+
+Parameters
+Name	Description
+payeeUid *
+string($uuid)
+(path)
+Unique identifier of the payee
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+accountUid *
+string($uuid)
+(path)
+Unique identifier of the payee account
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/payees/{payeeUid}/account/{accountUid}/scheduled-payments
+Get scheduled payments
+
+🔒 Security: Requires the scheduled-payment:read OAuth scope
+
+Parameters
+Name	Description
+payeeUid *
+string($uuid)
+(path)
+Unique identifier of the payee
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+accountUid *
+string($uuid)
+(path)
+Unique identifier of the payee account
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+ScheduledPaymentResponse{
+scheduledPayments	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/payees/{payeeUid}/account/{accountUid}/payments
+View a history of payments to your payee
+
+🔒 Security: Requires the payee-transaction:read OAuth scope
+
+Parameters
+Name	Description
+payeeUid *
+string($uuid)
+(path)
+Unique identifier of the payee
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+accountUid *
+string($uuid)
+(path)
+Unique identifier of the payee account
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+since *
+string($date)
+(query)
+Start date for a transaction history
+
+2023-01-01
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+Payments{
+description:	
+List of payments
+
+payments	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/payees/{payeeUid}/image
+Serves the image for the payee
+
+🔒 Security: Requires the payee-image:read OAuth scope
+
+Parameters
+Name	Description
+payeeUid *
+string($uuid)
+(path)
+Unique identifier of the payee
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+image/png
+Controls Accept header.
+Example Value
+Schema
+string($binary)
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Savings Goals
+
+
+PUT
+/api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}/add-money/{transferUid}
+Add money into a savings goal
+
+🔒 Security: Requires the savings-goal-transfer:create OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+savingsGoalUid *
+string($uuid)
+(path)
+Savings goal uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+transferUid *
+string($uuid)
+(path)
+Transfer uid, generated by the caller
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Top up request
+
+Example Value
+Schema
+TopUpRequestV2{
+description:	
+Request to make an immediate transfer into a savings goal
+
+amount*	CurrencyAndAmount{...}
+reference	string
+maxLength: 100
+minLength: 0
+nullable: true
+The reference for the transfer
+
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+SavingsGoalTransferResponseV2{
+description:	
+Response after attempting to make an immediate or recurring transfer into/out of a savings goal.
+
+transferUid*	string($uuid)
+example: 88998899-8899-8899-8899-889988998899
+Unique identifier for the transfer
+
+success	boolean
+example: true
+True if the method completed successfully
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}/recurring-transfer
+Get the recurring transfer of a savings goal
+
+🔒 Security: Requires the savings-goal-transfer:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+savingsGoalUid *
+string($uuid)
+(path)
+Savings goal uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+ScheduledSavingsPaymentV2{
+description:	
+A transfer into a savings goal that can happen once in the future or have multiple payments with same frequency
+
+transferUid*	string($uuid)
+example: 88998899-8899-8899-8899-889988998899
+Unique identifier of the transfer
+
+recurrenceRule*	RecurrenceRuleV2{...}
+currencyAndAmount*	CurrencyAndAmount{...}
+nextPaymentDate*	string($date)
+example: 2023-01-01
+The next date the payment will be made on
+
+reference	string
+nullable: true
+The reference on each transfer
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}/recurring-transfer
+Create a recurring transfer into a savings goal
+
+🔒 Security: Requires the savings-goal-transfer:create OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+savingsGoalUid *
+string($uuid)
+(path)
+Savings goal uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Recurring transfer request
+
+Example Value
+Schema
+ScheduledSavingsPaymentRequestV2{
+description:	
+Request to create scheduled payment into a savings goal
+
+recurrenceRule*	RecurrenceRuleV2{...}
+amount*	CurrencyAndAmount{...}
+topUp	boolean
+If the payment is a top up or not
+
+reference	string
+maxLength: 100
+minLength: 0
+nullable: true
+The reference used on each occasion
+
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+SavingsGoalTransferResponseV2{
+description:	
+Response after attempting to make an immediate or recurring transfer into/out of a savings goal.
+
+transferUid*	string($uuid)
+example: 88998899-8899-8899-8899-889988998899
+Unique identifier for the transfer
+
+success	boolean
+example: true
+True if the method completed successfully
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+DELETE
+/api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}/recurring-transfer
+Delete the recurring transfer of a savings goal
+
+🔒 Security: Requires the savings-goal-transfer:delete OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+savingsGoalUid *
+string($uuid)
+(path)
+Savings goal uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/account/{accountUid}/savings-goals
+Get all savings goals
+
+🔒 Security: Requires the savings-goal:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+SavingsGoalsV2{
+description:	
+A list containing all savings goals for account holder
+
+savingsGoalList*	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/account/{accountUid}/savings-goals
+Create a savings goal
+
+🔒 Security: Requires the savings-goal:create OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Savings goal request
+
+Example Value
+Schema
+SavingsGoalRequestV2{
+description:	
+Request to create a new savings goal
+
+name*	string
+example: Trip to Paris
+Name of the savings goal
+
+currency*	string
+maxLength: 3
+minLength: 3
+example: GBP
+ISO-4217 3 character currency code of the savings goal
+
+target	CurrencyAndAmount{...}
+base64EncodedPhoto	string
+A text (base 64) encoded picture to associate with the savings goal
+
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+CreateOrUpdateSavingsGoalResponseV2{
+description:	
+Response after attempting to create a savings goal
+
+savingsGoalUid	string($uuid)
+example: 77887788-7788-7788-7788-778877887788
+Unique identifier of the savings goal
+
+success	boolean
+example: true
+True if the method completed successfully
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}
+Get a savings goal
+
+🔒 Security: Requires the savings-goal:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+savingsGoalUid *
+string($uuid)
+(path)
+Savings goal uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+SavingsGoalV2{
+description:	
+A goal defined by an account holder to hold savings
+
+savingsGoalUid*	string($uuid)
+example: 77887788-7788-7788-7788-778877887788
+Unique identifier of the savings goal
+
+name*	string
+minLength: 1
+example: Trip to Paris
+Name of the savings goal
+
+target	CurrencyAndAmount{...}
+totalSaved*	CurrencyAndAmount{...}
+savedPercentage	integer($int32)
+minimum: 0
+example: 100
+Percentage of target currently deposited in the savings goal
+
+state*	string
+example: ACTIVE
+The state of the savings goal
+
+Enum:
+Array [ 6 ]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}
+Update an existing goal
+
+🔒 Security: Requires the savings-goal:create OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+savingsGoalUid *
+string($uuid)
+(path)
+Savings goal uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Savings goal request
+
+Example Value
+Schema
+SavingsGoalRequestV2{
+description:	
+Request to create a new savings goal
+
+name*	string
+example: Trip to Paris
+Name of the savings goal
+
+currency*	string
+maxLength: 3
+minLength: 3
+example: GBP
+ISO-4217 3 character currency code of the savings goal
+
+target	CurrencyAndAmount{...}
+base64EncodedPhoto	string
+A text (base 64) encoded picture to associate with the savings goal
+
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+CreateOrUpdateSavingsGoalResponseV2{
+description:	
+Response after attempting to create a savings goal
+
+savingsGoalUid	string($uuid)
+example: 77887788-7788-7788-7788-778877887788
+Unique identifier of the savings goal
+
+success	boolean
+example: true
+True if the method completed successfully
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+DELETE
+/api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}
+Delete a savings goal
+
+🔒 Security: Requires the savings-goal:delete OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+savingsGoalUid *
+string($uuid)
+(path)
+Savings goal uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}/photo
+Get the photo associated with a savings goal
+
+🔒 Security: Requires the savings-goal:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+savingsGoalUid *
+string($uuid)
+(path)
+Savings goal uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+SavingsGoalPhotoV2{
+description:	
+A photo associated to a savings goal
+
+base64EncodedPhoto*	string
+minLength: 1
+A text (base 64) encoded picture to associate with the savings goal
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+PUT
+/api/v2/account/{accountUid}/savings-goals/{savingsGoalUid}/withdraw-money/{transferUid}
+Withdraw money from a savings goal
+
+🔒 Security: Requires the savings-goal-transfer:create OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+savingsGoalUid *
+string($uuid)
+(path)
+Savings goal uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+transferUid *
+string($uuid)
+(path)
+Transfer uid, generated by the caller
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Request body
+
+application/json
+Withdrawal request
+
+Example Value
+Schema
+WithdrawalRequestV2{
+description:	
+Request to withdraw money from a savings goal.
+
+amount*	CurrencyAndAmount{...}
+reference	string
+maxLength: 100
+minLength: 0
+nullable: true
+The reference for the withdrawal from a savings goal.
+
+}
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+SavingsGoalTransferResponseV2{
+description:	
+Response after attempting to make an immediate or recurring transfer into/out of a savings goal.
+
+transferUid*	string($uuid)
+example: 88998899-8899-8899-8899-889988998899
+Unique identifier for the transfer
+
+success	boolean
+example: true
+True if the method completed successfully
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Settle Up
+
+
+GET
+/api/v2/settle-up/profile
+Fetch Settle Up profile for an account holder
+
+🔒 Security: Requires the settle-up:read OAuth scope
+
+Parameters
+No parameters
+
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+SettleUpProfile{
+status*	string
+example: ACTIVE
+Status
+
+Enum:
+Array [ 3 ]
+settleUpLink*	string
+minLength: 1
+example: https://settleup.starlingbank.com/amanda.hanks
+Settle Up link
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+Spaces
+
+
+GET
+/api/v2/account/{accountUid}/spaces/{spaceUid}/photo
+Get the photo associated with a space
+
+🔒 Security: Requires the space:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account UID
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+spaceUid *
+string($uuid)
+(path)
+Space UID
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+SpacePhoto{
+description:	
+A photo associated to a space
+
+base64EncodedPhoto*	string
+minLength: 1
+A text (base 64) encoded picture to associate with the space
+
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/account/{accountUid}/spaces
+Get all active savings and spending spaces
+
+🔒 Security: Requires the space:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+Spaces{
+description:	
+A list containing all spaces for an account holder
+
+savingsGoals*	[...]
+spendingSpaces*	[...]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+GET
+/api/v2/account/{accountUid}/spaces/spending/{spaceUid}
+Get a spending space
+
+🔒 Security: Requires the space:read OAuth scope
+
+Parameters
+Name	Description
+accountUid *
+string($uuid)
+(path)
+Account uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+spaceUid *
+string($uuid)
+(path)
+Spending space uid
+
+aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Responses
+Code	Description
+200	
+Successful operation
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+SpendingSpace{
+spaceUid*	string($uuid)
+example: aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+SpendingSpaceUid
+
+name*	string
+minLength: 1
+example: Shopping
+Name of the space
+
+balance*	CurrencyAndAmount{...}
+cardAssociationUid	string($uuid)
+example: aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+Card Association Uid
+
+sortOrder	integer($int32)
+Sort Order
+
+spendingSpaceType*	string
+Spending Space Type
+
+Enum:
+Array [ 9 ]
+state*	string
+example: ACTIVE
+The state of the spending space
+
+Enum:
+Array [ 6 ]
+}
+4xx	
+Client error. See API status codes for more details.
+
+Media type
+
+application/json
+Example Value
+Schema
+ErrorResponse{
+description:	
+Erroneous response wrapper
+
+errors	[...]
+success	boolean
+example: false
+}
+5xx	
+Server error. See API status codes for more details.
+
+
+Schemas
+V2 Webhooks
+
+
+POST
+/registered-web-hook-address/feed-item
+Receive new or updated feed item events
+
+🔒 Security: Unknown 😕
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+AccountHolderWebhookDispatchFeedItem{
+webhookEventUid*	string($uuid)
+example: 11221122-1122-1122-1122-112211221122
+Unique identifier representing the webhook event occurring
+
+eventTimestamp*	string($date-time)
+example: 2020-05-08T12:34:21Z
+Timestamp indicating when the webhook event occurred
+
+accountHolderUid*	string($uuid)
+example: aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+An account holder for which an event has occurred
+
+content*	FeedItem{...}
+}
+Responses
+Code	Description
+200	
+The webhook has been received successfully
+
+201	
+The webhook has been received successfully
+
+202	
+The webhook has been received successfully
+
+203	
+The webhook has been received successfully
+
+204	
+The webhook has been received successfully
+
+500	
+Any response other than a 20X operation will indicate the webhook has not been successfully received. The webhook will be retried with an exponential backoff until the configured limit is reached.
+
+
+POST
+/registered-web-hook-address/standing-order-payment
+Receive standing order payment events for a standing order
+
+🔒 Security: Unknown 😕
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+AccountHolderWebhookDispatchPaymentOrderWebhookEventPayload{
+webhookEventUid*	string($uuid)
+example: 11221122-1122-1122-1122-112211221122
+Unique identifier representing the webhook event occurring
+
+eventTimestamp*	string($date-time)
+example: 2020-05-08T12:34:21Z
+Timestamp indicating when the webhook event occurred
+
+accountHolderUid*	string($uuid)
+example: aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+An account holder for which an event has occurred
+
+content*	PaymentOrderWebhookEventPayload{...}
+}
+Responses
+Code	Description
+200	
+The webhook has been received successfully
+
+201	
+The webhook has been received successfully
+
+202	
+The webhook has been received successfully
+
+203	
+The webhook has been received successfully
+
+204	
+The webhook has been received successfully
+
+500	
+Any response other than a 20X operation will indicate the webhook has not been successfully received. The webhook will be retried with an exponential backoff until the configured limit is reached.
+
+
+POST
+/registered-web-hook-address/standing-order
+Receive new or updated standing order events
+
+🔒 Security: Unknown 😕
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+AccountHolderWebhookDispatchPaymentOrder{
+webhookEventUid*	string($uuid)
+example: 11221122-1122-1122-1122-112211221122
+Unique identifier representing the webhook event occurring
+
+eventTimestamp*	string($date-time)
+example: 2020-05-08T12:34:21Z
+Timestamp indicating when the webhook event occurred
+
+accountHolderUid*	string($uuid)
+example: aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa
+An account holder for which an event has occurred
+
+content*	PaymentOrder{...}
+}
+Responses
+Code	Description
+200	
+The webhook has been received successfully
+
+201	
+The webhook has been received successfully
+
+202	
+The webhook has been received successfully
+
+203	
+The webhook has been received successfully
+
+204	
+The webhook has been received successfully
+
+500	
+Any response other than a 20X operation will indicate the webhook has not been successfully received. The webhook will be retried with an exponential backoff until the configured limit is reached.
